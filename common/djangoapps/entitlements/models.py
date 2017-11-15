@@ -1,8 +1,21 @@
 import uuid as uuid_tools
+from datetime import datetime
 
 from django.conf import settings
 from django.db import models
+
+from entitlements.helpers import is_entitlement_expired
 from model_utils.models import TimeStampedModel
+
+
+class CourseEntitlementManager(models.Manager):
+    def get_queryset(self):
+        queryset = super(CourseEntitlementManager, self).get_queryset()
+        for entitlement in queryset:
+            if not entitlement.expired_at and is_entitlement_expired(entitlement, settings.ENTITLEMENTS_POLICY):
+                entitlement.expired_at = datetime.utcnow()
+                entitlement.save()
+        return queryset
 
 
 class CourseEntitlement(TimeStampedModel):
@@ -24,3 +37,4 @@ class CourseEntitlement(TimeStampedModel):
         help_text='The current Course enrollment for this entitlement. If NULL the Learner has not enrolled.'
     )
     order_number = models.CharField(max_length=128, null=True)
+    objects = CourseEntitlementManager()
