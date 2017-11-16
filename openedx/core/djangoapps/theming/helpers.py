@@ -18,14 +18,17 @@ from openedx.core.djangoapps.theming.helpers_dirs import (
     get_project_root_name_from_settings,
     Theme
 )
-from request_cache.middleware import RequestCache
+from request_cache.middleware import RequestCache, request_cached
 
 logger = getLogger(__name__)  # pylint: disable=invalid-name
 
 
+@request_cached
 def get_template_path(relative_path, **kwargs):
     """
     This is a proxy function to hide microsite_configuration behind comprehensive theming.
+
+    The calculated value is cached for the lifetime of the current request.
     """
     # We need to give priority to theming over microsites
     # So, we apply microsite override only if there is no associated site theme
