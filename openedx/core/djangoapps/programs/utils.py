@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.utils.functional import cached_property
 from edx_rest_api_client.exceptions import SlumberBaseException
 from opaque_keys.edx.keys import CourseKey
@@ -461,57 +462,70 @@ class ProgramDataExtender(object):
     def _attach_course_run_may_certify(self, run_mode):
         run_mode['may_certify'] = self.course_overview.may_certify()
 
-    def _check_enrollment_for_user(self, course_run):
-        applicable_seat_types = self.data['applicable_seat_types']
+    def _filter_out_courses_with_entitlements(self, courses):
+        course_uuids = set(course['uuid'] for course in courses)
+        # Filter the entitlements' modes with a case-insensitive match against applicable seat_types
+        query = Q()
+        for seat_type in self.data['applicable_seat_types']:
+            query = query | Q(mode__iexact=seat_type)
+        query = Q(course_uuid__in=course_uuids) & query
+        entitlements = self.user.courseentitlement_set.filter(query)
+        courses_with_entitlements = set(str(entitlement.course_uuid) for entitlement in entitlements)
+        return [course for course in courses if course['uuid'] not in courses_with_entitlements]
 
-        (enrollment_mode, active) = CourseEnrollment.enrollment_mode_for_user(
-            self.user,
-            CourseKey.from_string(course_run['key'])
+    def _filter_out_courses_with_enrollments(self, courses):
+        enrollments = self.user.courseenrollment_set.filter(
+            is_active=True,
+            mode__in=self.data['applicable_seat_types']
         )
+        course_runs_with_enrollments = set(unicode(enrollment.course_id) for enrollment in enrollments)
+        courses_without_enrollments = []
+        for course in courses:
+            if len([run for run in course['course_runs'] if unicode(run['key']) in course_runs_with_enrollments]) == 0:
+                courses_without_enrollments.append(course)
 
-        is_paid_seat = False
-        if enrollment_mode is not None and active is not None and active is True:
-            # Check all the applicable seat types
-            # this will also check for no-id-professional as professional
-            is_paid_seat = any(seat_type in enrollment_mode for seat_type in applicable_seat_types)
-
-        return is_paid_seat
+        return courses_without_enrollments
 
     def _collect_one_click_purchase_eligibility_data(self):
         """
         Extend the program data with data about learner's eligibility for one click purchase,
         discount data of the program and SKUs of seats that should be added to basket.
         """
-        applicable_seat_types = self.data['applicable_seat_types']
+        applicable_seat_types = set(seat for seat in self.data['applicable_seat_types'] if seat != 'credit')
         is_learner_eligible_for_one_click_purchase = self.data['is_program_eligible_for_one_click_purchase']
         skus = []
         bundle_variant = 'full'
+
         if is_learner_eligible_for_one_click_purchase:
-            for course in self.data['courses']:
-                add_course_sku = True
-                course_runs = course.get('course_runs', [])
-                published_course_runs = filter(lambda run: run['status'] == 'published', course_runs)
+            # Reduce the set of required courses to those for which the user doesn't have an active enrollment
+            courses = self._filter_out_courses_with_enrollments(self.data['courses'])
 
-                if len(published_course_runs) == 1:
-                    for course_run in course_runs:
-                        is_paid_seat = self._check_enrollment_for_user(course_run)
+            # Reduce the set of required courses to those for which the user doesn't have an entitlement
+            courses = self._filter_out_courses_with_entitlements(courses)
 
-                        if is_paid_seat:
-                            add_course_sku = False
-                            break
+            if len(courses) < len(self.data['courses']):
+                bundle_variant = 'partial'
 
-                    if add_course_sku:
+            for course in courses:
+                entitlements = []
+                for entitlement in course['entitlements']:
+                    if entitlement['mode'].lower() in applicable_seat_types:
+                        entitlements.append(entitlement)
+                if entitlements:
+                    skus.append(entitlements[0]['sku'])
+                else:
+                    course_runs = course.get('course_runs', [])
+                    published_course_runs = [run for run in course_runs if run['status'] == 'published']
+                    if len(published_course_runs) == 1:
                         for seat in published_course_runs[0]['seats']:
                             if seat['type'] in applicable_seat_types and seat['sku']:
                                 skus.append(seat['sku'])
+                                break
                     else:
-                        bundle_variant = 'partial'
-                else:
-                    # If a course in the program has more than 1 published course run
-                    # learner won't be eligible for a one click purchase.
-                    is_learner_eligible_for_one_click_purchase = False
-                    skus = []
-                    break
+                        # If a course in the program has more than 1 published course run
+                        # learner won't be eligible for a one click purchase.
+                        skus = []
+                        break
 
         if skus:
             try:
