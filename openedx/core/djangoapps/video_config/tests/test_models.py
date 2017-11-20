@@ -9,7 +9,11 @@ from contextlib import contextmanager
 from django.test import TestCase
 
 from opaque_keys.edx.locator import CourseLocator
-from openedx.core.djangoapps.video_config.models import CourseHLSPlaybackEnabledFlag, HLSPlaybackEnabledFlag
+from openedx.core.djangoapps.video_config.models import (
+    CourseHLSPlaybackEnabledFlag, HLSPlaybackEnabledFlag,
+    CourseVideoTranscriptEnabledFlag, VideoTranscriptEnabledFlag,
+    CourseVideoUploadsEnabledByDefault, VideoUploadsEnabledByDefault,
+)
 
 
 @contextmanager
@@ -184,8 +188,8 @@ class TestVideoTranscriptFlag(TestCase, FeatureFlagTestMixin):
         with course-specific flags.
         """
         self.verify_feature_flags(
-            all_courses_model_class=HLSPlaybackEnabledFlag,
-            course_specific_model_class=CourseHLSPlaybackEnabledFlag,
+            all_courses_model_class=VideoTranscriptEnabledFlag,
+            course_specific_model_class=CourseVideoTranscriptEnabledFlag,
             global_flag=global_flag,
             enabled_for_all_courses=enabled_for_all_courses,
             enabled_for_course_1=enabled_for_course_1
@@ -196,8 +200,8 @@ class TestVideoTranscriptFlag(TestCase, FeatureFlagTestMixin):
         Ensures that the Video Transcript course specific flag, once enabled for a course, can also be disabled.
         """
         self.verify_enable_disable_course_flag(
-            all_courses_model_class=HLSPlaybackEnabledFlag,
-            course_specific_model_class=CourseHLSPlaybackEnabledFlag
+            all_courses_model_class=VideoTranscriptEnabledFlag,
+            course_specific_model_class=CourseVideoTranscriptEnabledFlag
         )
 
     def test_enable_disable_globally(self):
@@ -205,6 +209,54 @@ class TestVideoTranscriptFlag(TestCase, FeatureFlagTestMixin):
         Ensures that the Video Transcript flag, once enabled globally, can also be disabled.
         """
         self.verify_enable_disable_globally(
-            all_courses_model_class=HLSPlaybackEnabledFlag,
-            course_specific_model_class=CourseHLSPlaybackEnabledFlag
+            all_courses_model_class=VideoTranscriptEnabledFlag,
+            course_specific_model_class=CourseVideoTranscriptEnabledFlag
+        )
+
+
+@ddt.ddt
+class TestVideoUploadsEnabledByDefault(TestCase, FeatureFlagTestMixin):
+    """
+    Tests the behavior of the flags for Video Uploads Enabled By Default feature.
+    These are set via Django admin settings.
+    """
+
+    @ddt.data(
+        *itertools.product(
+            (True, False),
+            (True, False),
+            (True, False),
+        )
+    )
+    @ddt.unpack
+    def test_video_transcript_feature_flags(self, global_flag, enabled_for_all_courses, enabled_for_course_1):
+        """
+        Tests that Video Uploads Enabled By Default feature flags works correctly on tweaking global flags
+        in combination with course-specific flags.
+        """
+        self.verify_feature_flags(
+            all_courses_model_class=VideoUploadsEnabledByDefault,
+            course_specific_model_class=CourseVideoUploadsEnabledByDefault,
+            global_flag=global_flag,
+            enabled_for_all_courses=enabled_for_all_courses,
+            enabled_for_course_1=enabled_for_course_1
+        )
+
+    def test_enable_disable_course_flag(self):
+        """
+        Ensures that the Video Uploads Enabled By Default course specific flag, once enabled for a course,
+        can also be disabled.
+        """
+        self.verify_enable_disable_course_flag(
+            all_courses_model_class=VideoUploadsEnabledByDefault,
+            course_specific_model_class=CourseVideoUploadsEnabledByDefault
+        )
+
+    def test_enable_disable_globally(self):
+        """
+        Ensures that the Video Uploads Enabled By Default flag, once enabled globally, can also be disabled.
+        """
+        self.verify_enable_disable_globally(
+            all_courses_model_class=VideoUploadsEnabledByDefault,
+            course_specific_model_class=CourseVideoUploadsEnabledByDefault
         )

@@ -7,7 +7,11 @@ from django import forms
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import CourseLocator
 
-from openedx.core.djangoapps.video_config.models import CourseHLSPlaybackEnabledFlag, CourseVideoTranscriptEnabledFlag
+from openedx.core.djangoapps.video_config.models import (
+    CourseHLSPlaybackEnabledFlag,
+    CourseVideoTranscriptEnabledFlag,
+    CourseVideoUploadsEnabledByDefault,
+)
 from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
@@ -61,4 +65,14 @@ class CourseVideoTranscriptFlagAdminForm(CourseSpecificFlagAdminBaseForm):
 
     class Meta(object):
         model = CourseVideoTranscriptEnabledFlag
+        fields = '__all__'
+
+
+class CourseVideoUploadsEnabledByDefaultAdminForm(CourseSpecificFlagAdminBaseForm):
+    """
+    Form for course-specific Video Uploads enabled by default configuration.
+    """
+
+    class Meta(object):
+        model = CourseVideoUploadsEnabledByDefault
         fields = '__all__'
