@@ -22,11 +22,11 @@
              EntitlementModel,
              CourseCardModel,
              pageTpl,
-             verificationpopoverTpl
+             verificationPopoverTpl
          ) {
              return Backbone.View.extend({
                  tpl: HtmlUtils.template(pageTpl),
-                 verificationTpl: HtmlUtils.template(verificationpopoverTpl),
+                 verificationTpl: HtmlUtils.template(verificationPopoverTpl),
 
                  events: {
                      'change .session-select': 'updateEnrollBtn',
@@ -69,6 +69,7 @@
                      HtmlUtils.setHtml(this.$el, this.tpl(this.entitlementModel.toJSON()));
                      this.delegateEvents();
                      this.updateEnrollBtn();
+                     return this;
                  },
 
                  postRender: function() {

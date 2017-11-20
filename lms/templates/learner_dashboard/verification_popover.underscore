@@ -1,7 +1,7 @@
 <div class="verification-modal" role="dialog" aria-labelledby="enrollment-verification-title">
     <p id="enrollment-verification-title">
-        <div class="popover-title">'
-            <%- confirmationMsgTitle %>
+        <div class="popover-title">
+            <%-confirmationMsgTitle %>
         </div>
         <%- confirmationMsgBody %>
     </p>
