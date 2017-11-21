@@ -10,7 +10,9 @@
         'js/learner_dashboard/models/course_entitlement_model',
         'js/learner_dashboard/models/course_card_model',
         'text!../../../templates/learner_dashboard/course_entitlement.underscore',
-        'text!../../../templates/learner_dashboard/verification_popover.underscore'
+        'text!../../../templates/learner_dashboard/verification_popover.underscore',
+        'popper',
+        'bootstrap'
     ],
          function(
              Backbone,
@@ -22,7 +24,9 @@
              EntitlementModel,
              CourseCardModel,
              pageTpl,
-             verificationPopoverTpl
+             verificationPopoverTpl,
+             popper,
+             bootstrap
          ) {
              return Backbone.View.extend({
                  tpl: HtmlUtils.template(pageTpl),
@@ -31,13 +35,11 @@
                  events: {
                      'change .session-select': 'updateEnrollBtn',
                      'click .enroll-btn': 'handleEnrollChange',
-                     'click .popover-dismiss': 'hideVerificationDialog',
-                     'keydown .final-confirmation-btn': 'handleVerificationPopoverA11y'
+                     'keydown .final-confirmation-btn': 'handleVerificationPopoverA11y',
+                     'click .popover-dismiss': function() { this.hideDialog($('.enroll-btn-initial')); }
                  },
 
                  initialize: function(options) {
-                     this.$el = $(this.el);
-
                      // Set up models and reload view on change
                      this.courseCardModel = new CourseCardModel();
                      this.entitlementModel = new EntitlementModel({
@@ -53,12 +55,12 @@
                      this.courseHomeUrl = options.courseHomeUrl;
 
                      // Grab elements from the parent card that work with this view and bind associated events
-                     this.$triggerOpenBtn = $(options.triggerOpenBtn) || $(''); // Opens/closes session selection view
-                     this.$dateDisplayField = $(options.dateDisplayField) || $(''); // Displays current session dates
-                     this.$enterCourseBtn = $(options.enterCourseBtn) || $(''); // Button link to course home page
-                     this.$courseCardMessages = $(options.courseCardMessages) || $(''); // Additional session messages
-                     this.$courseTitleLink = $(options.courseTitleLink) || $(''); // Title link to course home page
-                     this.$courseImageLink = $(options.courseImageLink) || $(''); // Image link to course home page
+                     this.$triggerOpenBtn = $(options.triggerOpenBtn); // Opens/closes session selection view
+                     this.$dateDisplayField = $(options.dateDisplayField); // Displays current session dates
+                     this.$enterCourseBtn = $(options.enterCourseBtn); // Button link to course home page
+                     this.$courseCardMessages = $(options.courseCardMessages); // Additional session messages
+                     this.$courseTitleLink = $(options.courseTitleLink); // Title link to course home page
+                     this.$courseImageLink = $(options.courseImageLink); // Image link to course home page
                      this.$triggerOpenBtn.on('click', this.toggleSessionSelectionPanel.bind(this));
 
                      this.render(options);
@@ -81,8 +83,8 @@
                      }.bind(this));
 
                      // Ensure that focus moves to the popover on click of the initial change enrollment button.
-                      $(document).on('click', '.enroll-btn-initial', function() {
-                         this.$('.enroll-btn-initial').popover('show');
+                     $(document).on('click', '.enroll-btn-initial', function() {
+                         this.showDialog($('.enroll-btn-initial'));
                          this.$('.final-confirmation-btn:first').focus();
                      }.bind(this));
                  },
@@ -108,18 +110,17 @@
                      );
 
                      $.ajax({
-                         type: 'POST',
+                         type: isUnenrolling ? 'DELETE' : 'POST',
                          url: this.enrollUrl,
                          contentType: 'application/json',
                          dataType: 'json',
                          data: JSON.stringify({
-                             is_active: !isUnenrolling,
-                             course_details: {
-                                 course_id: this.currentSessionSelection,
-                                 course_uuid: this.entitlementModel.get('entitlementUUID')
-                             }
+                             course_run_id: this.currentSessionSelection
                          }),
-                         success: _.bind(this.enrollSuccess, this),
+                         statusCode: {
+                             201: _.bind(this.enrollSuccess, this),
+                             204: _.bind(this.unenrollSuccess, this)
+                         },
                          error: _.bind(this.enrollError, this)
                      });
                  },
@@ -128,53 +129,75 @@
                      /*
                      Update external elements on the course card to represent the now available course session.
 
-                     On enroll:
                      1) Show the change session toggle button.
                      2) Add the new session's dates to the date field on the main course card.
                      3) Hide the 'View Course' button to the course card.
+                     */
+                     var successIconEl = '<span class="fa fa-check" aria-hidden="true"></span>';
 
-                     On unenroll:
+                     // Update the model with the new session Id;
+                     this.entitlementModel.set({currentSessionId: this.currentSessionSelection});
+
+                     // Allow user to change session
+                     this.$triggerOpenBtn.removeClass('hidden');
+
+                     // Display a success indicator
+                     HtmlUtils.setHtml(this.$dateDisplayField,
+                         HtmlUtils.HTML(
+                             successIconEl + this.getAvailableSessionWithId(data.course_run_id).session_dates
+                         )
+                     );
+
+                     // Ensure the view course button links to new session home page and place focus there
+                     this.$enterCourseBtn
+                         .attr('href', this.formatCourseHomeUrl(data.course_run_id))
+                         .removeClass('hidden')
+                         .focus();
+                     this.toggleSessionSelectionPanel();
+                 },
+
+                 unenrollSuccess: function() {
+                     /*
+                     Update external elements on the course card to represent the unenrolled state.
+
                      1) Hide the change session button and the date field.
                      2) Hide the 'View Course' button.
                      3) Remove the messages associated with the enrolled state.
                      4) Remove the link from the course card image and title.
                      */
-                     var enrolled = data.is_active,
-                         disabledCourseImageLink,
-                         disabledCourseTitleLink,
-                         successIconEl = '<span class="fa fa-check" aria-hidden="true"></span>';
 
                      // Update the model with the new session Id;
                      this.entitlementModel.set({currentSessionId: this.currentSessionSelection});
-                     if (enrolled) {
-                         // Display a success indicator
-                         this.$triggerOpenBtn.removeClass('hidden');
-                         HtmlUtils.setHtml(this.$dateDisplayField,
-                             HtmlUtils.HTML(
-                                 successIconEl +
-                                 this.getAvailableSessionWithId(data.course_details.course_id).session_dates
-                             )
-                         );
 
-                         // Ensure the view course button links to new session home page
-                         this.$enterCourseBtn
-                             .attr('href', this.formatCourseHomeUrl(data.course_details.course_id))
-                             .removeClass('hidden');
-                         this.toggleSessionSelectionPanel();
-                     } else {
-                         // Reset the card contents to the unenrolled state
-                         this.$triggerOpenBtn.addClass('hidden');
-                         this.$enterCourseBtn.addClass('hidden');
-                         this.$dateDisplayField.html('');
-                         this.$courseCardMessages.remove();
+                     // Reset the card contents to the unenrolled state
+                     this.$triggerOpenBtn.addClass('hidden');
+                     this.$enterCourseBtn.addClass('hidden');
+                     this.$dateDisplayField.html(
+                         HtmlUtils.joinHtml(
+                             HtmlUtils.HTML('<span class="icon fa fa-warning" aria-hidden="true"></span>'),
+                             HtmlUtils.HTML(gettext('You must select a session below to access course.'))
+                         ).text
+                     );
+                     this.$courseCardMessages.remove();
+                     this.$('.enroll-btn-initial').focus();
 
-                         // Remove links to previously enrolled sessions
-                         disabledCourseImageLink = '<div class="' + this.$courseImageLink.attr('class') +
-                              '" tabindex="-1">' + this.$courseImageLink.html() + '</div>';
-                         disabledCourseTitleLink = '<span>' + this.$courseTitleLink.text() + '</span>';
-                         this.$courseImageLink.replaceWith(disabledCourseImageLink);
-                         this.$courseTitleLink.replaceWith(disabledCourseTitleLink);
-                     }
+                     // Remove links to previously enrolled sessions
+                     this.$courseImageLink.replaceWith( // xss-lint: disable=javascript-jquery-insertion
+                         HtmlUtils.joinHtml(
+                             HtmlUtils.HTML('<div class="'),
+                             this.$courseImageLink.attr('class'),
+                             HtmlUtils.HTML('" tabindex="-1">'),
+                             HtmlUtils.HTML(this.$courseImageLink.html()),
+                             HtmlUtils.HTML('</div>')
+                         ).text
+                     );
+                     this.$courseTitleLink.replaceWith( // xss-lint: disable=javascript-jquery-insertion
+                         HtmlUtils.joinHtml(
+                             HtmlUtils.HTML('<span>'),
+                             this.$courseTitleLink.text(),
+                             HtmlUtils.HTML('</span>')
+                         ).text
+                     );
                  },
 
                  enrollError: function() {
@@ -184,7 +207,7 @@
                          .removeClass('fa-spin fa-spinner')
                          .addClass('fa-close');
                      this.$dateDisplayField.append(errorMsgEl);
-                     this.hideVerificationDialog();
+                     this.hideDialog($('.enroll-btn-initial'));
                  },
 
                  updateEnrollBtn: function() {
@@ -203,7 +226,7 @@
                      // Disable the button if the user is already enrolled in that session.
                      if (currentSessionId === newSessionId) {
                          enrollBtnInitial.addClass('disabled');
-                         enrollBtnInitial.popover('dispose');
+                         this.removeDialog(enrollBtnInitial);
                          return;
                      }
                      enrollBtnInitial.removeClass('disabled');
@@ -215,8 +238,8 @@
                          enrollText = gettext('Leave Current Session');
                      }
                      this.$('.enroll-btn-initial').text(enrollText);
-                     this.removeVerificationDialog();
-                     this.initializeVerificationDialog();
+                     this.removeDialog($('.enroll-btn-initial'));
+                     this.initializeVerificationDialog($('.enroll-btn-initial'));
                  },
 
                  toggleSessionSelectionPanel: function() {
@@ -232,10 +255,12 @@
                      this.updateEnrollBtn();
                  },
 
-                 initializeVerificationDialog: function() {
+                 initializeVerificationDialog: function(invokingElement) {
                      /*
-                     Instantiates an instance of the Bootstrap v4 dialog modal and attaches it to the update
-                     session enrollment button.
+                     Instantiates an instance of the Bootstrap v4 dialog modal and attaches it to the passed in element.
+
+                     This dialog acts as the second step in verifying the user's action to select, change or leave an
+                     available course session.
                       */
                      var confirmationMsgTitle,
                          confirmationMsgBody,
@@ -250,11 +275,11 @@
                              gettext('Are you sure that you would like to switch session?');
                          confirmationMsgBody = !currentSessionId ? '' :
                              gettext('Please know that by choosing to switch session you will' +
-                                 ' lose any progress you have made in this session.')
+                                 ' lose any progress you have made in this session.');
                      } else {
                          confirmationMsgTitle = gettext('Are you sure that you would like to leave this session?');
                          confirmationMsgBody = gettext('Please know that by leaving you will lose any progress you ' +
-                                'had made in this session.')
+                                'had made in this session.');
                      }
 
                      // Remove existing popover and re-initialize
@@ -263,7 +288,7 @@
                          confirmationMsgBody: confirmationMsgBody
                      });
 
-                     this.$('.enroll-btn-initial').popover({
+                     invokingElement.popover({
                          placement: 'bottom',
                          container: this.$el,
                          html: true,
@@ -272,14 +297,19 @@
                      });
                  },
 
-                 removeVerificationDialog: function() {
+                 removeDialog: function(invokingElement) {
                      /* Removes the Bootstrap v4 dialog modal from the update session enrollment button. */
-                     this.$('.enroll-btn-initial').popover('dispose');
+                     invokingElement.popover('dispose');
                  },
 
-                 hideVerificationDialog: function() {
-                     /* Hides the Bootstrap v4 dialog modal without removing it from the DOM. */
-                     this.$('.enroll-btn-initial').focus().popover('hide');
+                 showDialog: function(invokingElement) {
+                     /* Given an element with an associated dialog modal, shows the modal. */
+                     invokingElement.popover('show');
+                 },
+
+                 hideDialog: function(invokingElement) {
+                     /* Hides the  modal without removing it from the DOM. */
+                     invokingElement.focus().popover('hide');
                  },
 
                  handleVerificationPopoverA11y: function(e) {
@@ -305,8 +335,8 @@
                      */
                      var oldSessionKey = this.courseHomeUrl.split('/')
                          .filter(
-                             function(x) {
-                                 return x.indexOf('+') > 0;
+                             function(urlParam) {
+                                 return urlParam.indexOf('+') > 0;
                              }
                          )[0];
                      return this.courseHomeUrl.replace(oldSessionKey, sessionKey);
@@ -345,8 +375,8 @@
 
                  getAvailableSessionWithId: function(sessionId) {
                      /* Returns an available session given a sessionId */
-                     var availableSessions = this.entitlementModel.get('availableSessions').filter(function(x) {
-                         return x.session_id === sessionId;
+                     var availableSessions = this.entitlementModel.get('availableSessions').filter(function(session) {
+                         return session.session_id === sessionId;
                      });
                      return availableSessions ? availableSessions[0] : '';
                  }

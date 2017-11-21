@@ -123,7 +123,9 @@
             'tinymce': 'js/vendor/tinymce/js/tinymce/tinymce.full.min',
             'jquery.tinymce': 'js/vendor/tinymce/js/tinymce/jquery.tinymce.min',
             'picturefill': 'common/js/vendor/picturefill',
-            'hls': 'common/js/vendor/hls'
+            'hls': 'common/js/vendor/hls',
+            'popper': 'common/js/vendor/popper',
+            'bootstrap': 'common/js/vendor/bootstrap'
             // end of files needed by OVA
         },
         shim: {
@@ -168,6 +170,10 @@
             'string_utils': {
                 deps: ['underscore'],
                 exports: 'interpolate_text'
+            },
+            'bootstrap': {
+                deps: ['popper'],
+                exports: 'bootstrap'
             },
             // Needed by OVA
             'video.dev': {

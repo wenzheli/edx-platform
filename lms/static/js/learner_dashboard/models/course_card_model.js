@@ -153,22 +153,22 @@
                         dateString = gettext('(Self-paced) ');
                         if (start) {
                             dateString += startDate > now ?
-                                StringUtils.interpolate(gettext('Starts {start}'), { start: start }) :
-                                StringUtils.interpolate(gettext('Started {start}'), { start: start });
+                                StringUtils.interpolate(gettext('Starts {start}'), {start: start}) :
+                                StringUtils.interpolate(gettext('Started {start}'), {start: start});
                         } else if (end && endDate > now) {
-                            StringUtils.interpolate(gettext('Ends {end}'), { end: end });
+                            dateString += StringUtils.interpolate(gettext('Ends {end}'), {end: end});
                         } else if (end && endDate < now) {
-                            StringUtils.interpolate(gettext('Ended {end}'), { end: end });
+                            dateString += StringUtils.interpolate(gettext('Ended {end}'), {end: end});
                         }
                     } else {
                         if (start && end) {
                             dateString = start + ' - ' + end;
                         } else if (start) {
                             dateString += startDate > now ?
-                                StringUtils.interpolate(gettext('Starts {start}'), { start: start }) :
-                                StringUtils.interpolate(gettext('Started {start}'), { start: start });
+                                StringUtils.interpolate(gettext('Starts {start}'), {start: start}) :
+                                StringUtils.interpolate(gettext('Started {start}'), {start: start});
                         } else if (end) {
-                            StringUtils.interpolate(gettext('Ends {end}'), { end: end });
+                            dateString += StringUtils.interpolate(gettext('Ends {end}'), {end: end});
                         }
                     }
                     return dateString;

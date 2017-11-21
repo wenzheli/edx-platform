@@ -659,12 +659,14 @@
     // CASE: expandable
     &.is-expandable {
       .wrapper-tip {
-        .message-title, .message-copy {
+        .message-title,
+        .message-copy {
           margin-bottom: 0;
           display: inline-block;
         }
 
-        .message-title .value, .message-copy {
+        .message-title .value,
+        .message-copy {
           @include transition(color $tmg-f2 ease-in-out 0s);
         }
 
@@ -672,7 +674,9 @@
         &:hover {
           cursor: pointer;
 
-          .message-title .value, .message-copy, .ui-toggle-expansion {
+          .message-title .value,
+          .message-copy,
+          .ui-toggle-expansion {
             color: $link-color;
           }
         }
