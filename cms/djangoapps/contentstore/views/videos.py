@@ -484,7 +484,8 @@ def _get_and_validate_course(course_key_string, user):
     if (
             settings.FEATURES["ENABLE_VIDEO_UPLOAD_PIPELINE"] and
             getattr(settings, "VIDEO_UPLOAD_PIPELINE", None) and
-            course
+            course and
+            course.video_pipeline_configured
     ):
         return course
     else:
