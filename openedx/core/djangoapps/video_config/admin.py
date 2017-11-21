@@ -51,7 +51,7 @@ class CourseVideoTranscriptEnabledFlagAdmin(CourseSpecificEnabledFlagBaseAdmin):
 
 class CourseVideoUploadsEnabledByDefaultAdmin(CourseSpecificEnabledFlagBaseAdmin):
     """
-    Admin of Video Uploads Enabled By Default feature on course-by-course basis.
+    Admin of video uploads enabled by default feature on course-by-course basis.
     Allows searching by course id.
     """
     form = CourseVideoUploadsEnabledByDefaultAdminForm

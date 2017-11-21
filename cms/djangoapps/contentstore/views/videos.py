@@ -692,6 +692,8 @@ def videos_post(course, request):
             ('course_key', unicode(course.id)),
         ]
 
+        # Only include `course_video_upload_token` if its set, as it won't be required if video uploads
+        # are enabled by default.
         course_video_upload_token = course.video_upload_pipeline.get('course_video_upload_token')
         if course_video_upload_token:
             metadata_list.append(('course_video_upload_token', course_video_upload_token))

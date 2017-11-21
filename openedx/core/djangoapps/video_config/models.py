@@ -135,7 +135,7 @@ class CourseVideoTranscriptEnabledFlag(ConfigurationModel):
 
 class VideoUploadsEnabledByDefault(ConfigurationModel):
     """
-    Enables Video Uploads Enabled By Default feature across the platform.
+    Enables video uploads enabled By default feature across the platform.
     """
     # this field overrides course-specific settings
     enabled_for_all_courses = BooleanField(default=False)
@@ -173,7 +173,7 @@ class VideoUploadsEnabledByDefault(ConfigurationModel):
 
 class CourseVideoUploadsEnabledByDefault(ConfigurationModel):
     """
-    Enables Video Uploads Enabled By Default feature for a specific course. Its global feature must be
+    Enables video uploads enabled by default feature for a specific course. Its global feature must be
     enabled for this to take effect.
     """
     KEY_FIELDS = ('course_id',)

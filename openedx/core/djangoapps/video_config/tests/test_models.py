@@ -217,7 +217,7 @@ class TestVideoTranscriptFlag(TestCase, FeatureFlagTestMixin):
 @ddt.ddt
 class TestVideoUploadsEnabledByDefault(TestCase, FeatureFlagTestMixin):
     """
-    Tests the behavior of the flags for Video Uploads Enabled By Default feature.
+    Tests the behavior of the flags for video uploads enabled by default feature.
     These are set via Django admin settings.
     """
 
@@ -229,9 +229,9 @@ class TestVideoUploadsEnabledByDefault(TestCase, FeatureFlagTestMixin):
         )
     )
     @ddt.unpack
-    def test_video_transcript_feature_flags(self, global_flag, enabled_for_all_courses, enabled_for_course_1):
+    def test_video_upload_enabled_by_default_feature_flags(self, global_flag, enabled_for_all_courses, enabled_for_course_1):
         """
-        Tests that Video Uploads Enabled By Default feature flags works correctly on tweaking global flags
+        Tests that video uploads enabled by default feature flags works correctly on tweaking global flags
         in combination with course-specific flags.
         """
         self.verify_feature_flags(
@@ -244,7 +244,7 @@ class TestVideoUploadsEnabledByDefault(TestCase, FeatureFlagTestMixin):
 
     def test_enable_disable_course_flag(self):
         """
-        Ensures that the Video Uploads Enabled By Default course specific flag, once enabled for a course,
+        Ensures that the video uploads enabled by default course specific flag, once enabled for a course,
         can also be disabled.
         """
         self.verify_enable_disable_course_flag(
@@ -254,7 +254,7 @@ class TestVideoUploadsEnabledByDefault(TestCase, FeatureFlagTestMixin):
 
     def test_enable_disable_globally(self):
         """
-        Ensures that the Video Uploads Enabled By Default flag, once enabled globally, can also be disabled.
+        Ensures that the video uploads enabled by default flag, once enabled globally, can also be disabled.
         """
         self.verify_enable_disable_globally(
             all_courses_model_class=VideoUploadsEnabledByDefault,
