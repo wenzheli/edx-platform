@@ -6,6 +6,7 @@ import factory
 import uuid
 from faker import Faker
 
+
 fake = Faker()
 
 
