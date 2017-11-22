@@ -144,12 +144,13 @@ class VideoUploadsEnabledByDefault(ConfigurationModel):
     def feature_enabled(cls, course_id):
         """
         Looks at the currently active configuration model to determine whether
-        the Video Transcript feature is available.
+        the VideoUploadsEnabledByDefault feature is available.
 
         If the feature flag is not enabled, the feature is not available.
         If the flag is enabled for all the courses, feature is available.
-        If the flag is enabled and the provided course_id is for an course
-            with Video Transcript enabled, the feature is available.
+        If the flag is enabled and the provided course_id is for a course
+            with CourseVideoUploadsEnabledByDefault enabled, then the
+            feature is available.
 
         Arguments:
             course_id (CourseKey): course id for whom feature will be checked.
