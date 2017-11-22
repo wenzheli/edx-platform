@@ -16,7 +16,7 @@ define([
             },
 
             handleEnableButtonPress: function(event) {
-                if (event.type === 'click' || event.which === 13 || event.which === 32) {
+                if (event.type === 'click' || event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     this.highlightsEnableXBlock();
                 }
