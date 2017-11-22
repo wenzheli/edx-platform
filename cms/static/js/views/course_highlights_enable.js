@@ -1,8 +1,8 @@
 define([
     'jquery', 'underscore', 'backbone', 'js/views/utils/xblock_utils', 'js/utils/templates',
-    'js/views/modals/course_outline_modals'],
+    'js/views/modals/course_outline_modals', 'edx-ui-toolkit/js/utils/html-utils'],
     function(
-        $, _, Backbone, XBlockViewUtils, TemplateUtils, CourseOutlineModalsFactory
+        $, _, Backbone, XBlockViewUtils, TemplateUtils, CourseOutlineModalsFactory, HtmlUtils
     ) {
         'use strict';
         var CourseHighlightsEnableView = Backbone.View.extend({
@@ -43,7 +43,8 @@ define([
             },
 
             render: function() {
-                this.$el.html(this.template(this.model.attributes));
+                var html = this.template(this.model.attributes);
+                HtmlUtils.setHtml(this.$el, HtmlUtils.HTML(html));
                 return this;
             }
         });

@@ -10,6 +10,7 @@
 ) %>
 </p>
 <p>
+<% // xss-lint: disable=underscore-not-escaped %>
 <%= edx.HtmlUtils.interpolateHtml(
     gettext(
         'Are you sure you want to enable weekly course highlight messages? ' 
