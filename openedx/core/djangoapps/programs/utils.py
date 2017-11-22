@@ -23,7 +23,6 @@ from course_modes.models import CourseMode
 from lms.djangoapps.certificates import api as certificate_api
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangoapps.catalog.utils import get_programs
 from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
@@ -463,6 +462,7 @@ class ProgramDataExtender(object):
         run_mode['may_certify'] = self.course_overview.may_certify()
 
     def _filter_out_courses_with_entitlements(self, courses):
+        """ Removes courses for which the current user already holds an applicable entitlement. """
         course_uuids = set(course['uuid'] for course in courses)
         # Filter the entitlements' modes with a case-insensitive match against applicable seat_types
         query = Q()
@@ -474,6 +474,10 @@ class ProgramDataExtender(object):
         return [course for course in courses if course['uuid'] not in courses_with_entitlements]
 
     def _filter_out_courses_with_enrollments(self, courses):
+        """
+        Removes courses for which the current user already holds
+        an active and applicable enrollment for one of that course's runs.
+        """
         enrollments = self.user.courseenrollment_set.filter(
             is_active=True,
             mode__in=self.data['applicable_seat_types']
@@ -497,10 +501,7 @@ class ProgramDataExtender(object):
         bundle_variant = 'full'
 
         if is_learner_eligible_for_one_click_purchase:
-            # Reduce the set of required courses to those for which the user doesn't have an active enrollment
             courses = self._filter_out_courses_with_enrollments(self.data['courses'])
-
-            # Reduce the set of required courses to those for which the user doesn't have an entitlement
             courses = self._filter_out_courses_with_entitlements(courses)
 
             if len(courses) < len(self.data['courses']):
