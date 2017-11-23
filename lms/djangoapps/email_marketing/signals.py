@@ -20,6 +20,7 @@ from student.signals import ENROLL_STATUS_CHANGE
 from student.views import REGISTER_USER
 from util.model_utils import USER_FIELD_CHANGED
 from .tasks import update_course_enrollment
+from enterprise.utils import REGISTER_ENTERPRISE_USER
 
 log = logging.getLogger(__name__)
 
@@ -139,6 +140,25 @@ def email_marketing_register_user(sender, user, registration,
                       site=_get_current_site(), new_user=True)
 
 
+@receiver(REGISTER_ENTERPRISE_USER)
+def email_marketing_enterprise_user(sender, user, **kwargs):  # pylint: disable=unused-argument
+    """
+    Called after enterprise learner is created and saved
+
+    Args:
+        sender: Not used
+        user: The enterprise user object
+        kwargs: Not used
+    """
+    email_config = EmailMarketingConfiguration.current()
+    if not email_config.enabled:
+        return
+
+    # perform update asynchronously
+    update_user.delay(_create_sailthru_user_vars(user, user.profile, is_enterprise_learner=True),
+                      user.email, site=_get_current_site())
+
+
 @receiver(USER_FIELD_CHANGED)
 def email_marketing_user_field_changed(sender, user=None, table=None, setting=None,
                                        old_value=None, new_value=None,
@@ -185,7 +205,7 @@ def email_marketing_user_field_changed(sender, user=None, table=None, setting=No
         update_user_email.delay(user.email, old_value)
 
 
-def _create_sailthru_user_vars(user, profile, registration=None):
+def _create_sailthru_user_vars(user, profile, registration=None, is_enterprise_learner=False):
     """
     Create sailthru user create/update vars from user + profile.
     """
@@ -208,6 +228,7 @@ def _create_sailthru_user_vars(user, profile, registration=None):
     if registration:
         sailthru_vars['activation_key'] = registration.activation_key
 
+    sailthru_vars['is_enterprise_learner'] = is_enterprise_learner
     return sailthru_vars
 
 
