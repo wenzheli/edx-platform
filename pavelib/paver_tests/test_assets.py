@@ -61,6 +61,9 @@ class TestPaverAssetTasks(PaverTestCase):
                 u'rtlcss lms/static/css/bootstrap/lms-main.css lms/static/css/bootstrap/lms-main-rtl.css'
             )
             expected_messages.append(
+                u'rtlcss lms/static/css/mobile/main.css lms/static/css/mobile/main-rtl.css'
+            )
+            expected_messages.append(
                 u'rtlcss lms/static/css/discussion/lms-discussion-bootstrap.css'
                 u' lms/static/css/discussion/lms-discussion-bootstrap-rtl.css'
             )
@@ -139,6 +142,12 @@ class TestPaverThemeAssetTasks(PaverTestCase):
                 )
             )
             expected_messages.append(
+                u'rtlcss {test_theme_dir}/lms/static/css/mobile/main.css'
+                u' {test_theme_dir}/lms/static/css/mobile/main-rtl.css'.format(
+                    test_theme_dir=str(TEST_THEME_DIR),
+                )
+            )
+            expected_messages.append(
                 u'rtlcss {test_theme_dir}/lms/static/css/discussion/lms-discussion-bootstrap.css'
                 u' {test_theme_dir}/lms/static/css/discussion/lms-discussion-bootstrap-rtl.css'.format(
                     test_theme_dir=str(TEST_THEME_DIR),
@@ -154,6 +163,9 @@ class TestPaverThemeAssetTasks(PaverTestCase):
             expected_messages.append(u'libsass lms/static/sass')
             expected_messages.append(
                 u'rtlcss lms/static/css/bootstrap/lms-main.css lms/static/css/bootstrap/lms-main-rtl.css'
+            )
+            expected_messages.append(
+                u'rtlcss lms/static/css/mobile/main.css lms/static/css/mobile/main-rtl.css'
             )
             expected_messages.append(
                 u'rtlcss lms/static/css/discussion/lms-discussion-bootstrap.css'
