@@ -5,6 +5,8 @@ import mock
 
 from django.core.management import call_command, CommandError
 
+from openedx.core.djangoapps.theming.models import SiteTheme
+
 SITES = ['site_alpha', 'site_beta']
 
 
@@ -35,7 +37,6 @@ class TestCreateSiteAndConfiguration(TestCase):
         super(TestCreateSiteAndConfiguration, self).setUp()
 
         self.dns_name = 'dummy_dns'
-        self.site_count = 2
 
     def test_without_dns(self):
         """ Test the command without dns_name """
@@ -54,10 +55,26 @@ class TestCreateSiteAndConfiguration(TestCase):
         )
 
         sites = Site.objects.all()
+        self.assertEqual(len(sites), len(SITES)+1)
         for site in sites:
             if site.name in SITES:
+                site_theme = SiteTheme.objects.get(site=site)
+
+                self.assertEqual(
+                    site_theme.theme_dir_name,
+                    "{}_dir_name".format(site.name)
+                )
+
                 self.assertDictEqual(
                     dict(site.configuration.values),
                     _generate_site_config(self.dns_name, site.name)
                 )
 
+        call_command(
+            "create_sites_and_configurations",
+            "--dns-name", self.dns_name
+        )
+
+        # if we run command with same dns then it will not duplicates the sites.
+        sites = Site.objects.all()
+        self.assertEqual(len(sites), len(SITES)+1)
