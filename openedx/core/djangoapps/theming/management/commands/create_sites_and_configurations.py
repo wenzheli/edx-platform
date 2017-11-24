@@ -532,15 +532,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--dns-name',
             type=str,
-            dest='dns_name',
-            help='DNS name of sandbox.',
+            help='Enter DNS name of sandbox.',
+            required=True
         )
 
     def handle(self, *args, **options):
 
         dns_name = options['dns_name']
-        if options['dns_name'] is None:
-            raise CommandError("Must provide an 'dns name'")
 
         logger.info("Creating sites with '{dns_name}' dns name".format(dns_name=dns_name))
 
